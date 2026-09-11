@@ -1,11 +1,8 @@
 import { useState } from "react";
 
-
 declare global {
   interface Window {
-    midnight?: {
-      mnLace?: any;
-    };
+    midnight?: Record<string, any>;
   }
 }
 
@@ -23,26 +20,31 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     setIsLoading(true);
     
     try {
-      if (!window.midnight || !window.midnight.mnLace) {
-        throw new Error('Lace wallet is not installed or the Midnight extension is disabled.');
+      if (!window.midnight || Object.keys(window.midnight).length === 0) {
+        throw new Error('No Midnight-compatible wallets detected. Ensure Lace is installed and unlocked.');
       }
       
-      const laceApi = window.midnight.mnLace;
+      // Grab the first available wallet (usually Lace)
+      const walletKey = Object.keys(window.midnight)[0];
+      const laceApi = window.midnight[walletKey];
       
       // Connect to the Preview network
       let api;
       try {
         api = await laceApi.connect('preview');
       } catch (connectErr: any) {
-        // User rejection or network mismatch
-        if (connectErr.message?.includes('network')) {
-          throw new Error('Network mismatch. Please switch to the Preview network in Lace.');
-        } else {
-          throw new Error('Connection was rejected by the user or an internal error occurred.');
+        // Fallback: some older versions might use a different network string or just connect()
+        try {
+           api = await laceApi.connect();
+        } catch(fallbackErr: any) {
+           throw new Error('Connection was rejected by the user or an internal error occurred.');
         }
       }
       
       // Fetch the unshielded address
+      if (!api || !api.getUnshieldedAddress) {
+         throw new Error("Connected successfully, but the wallet did not return the expected DApp API.");
+      }
       const { unshieldedAddress } = await api.getUnshieldedAddress();
       
       setAddress(unshieldedAddress);
@@ -65,7 +67,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     <div style={{ padding: '20px', background: 'rgba(0, 0, 0, 0.7)', border: '1px solid #444', color: 'white', borderRadius: '8px', marginBottom: '20px' }}>
       <h2>Wallet Connection</h2>
       
-      {error && <div style={{ color: '#d32f2f', padding: '10px', background: '#ffebee', marginBottom: '10px', borderRadius: '4px' }}>
+      {error && <div style={{ color: '#ff5252', padding: '10px', background: 'rgba(255,0,0,0.1)', marginBottom: '10px', borderRadius: '4px' }}>
         <strong>Error:</strong> {error}
       </div>}
       
@@ -82,8 +84,8 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
         </div>
       ) : (
         <div>
-          <p>Status: <strong style={{ color: 'green' }}>Connected</strong></p>
-          <p>Address: <span style={{ fontFamily: 'monospace', background: '#f5f5f5', padding: '2px 4px' }}>{address}</span></p>
+          <p>Status: <strong style={{ color: '#4caf50' }}>Connected</strong></p>
+          <p>Address: <span style={{ fontFamily: 'monospace', background: 'rgba(255,255,255,0.1)', padding: '2px 4px' }}>{address}</span></p>
           <button 
             onClick={disconnectWallet} 
             style={{ padding: '8px 16px', cursor: 'pointer' }}
