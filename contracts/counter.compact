@@ -1,0 +1,21 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+/*
+ * Public vs Private Explanation:
+ * - Public Ledger State: 'count' is publicly visible on the blockchain and holds the current total.
+ * - Private Witness: 'secretIncrement' is a private input (witness) provided locally by the user. 
+ *   It is never exposed to the public blockchain, meaning no one can see how much was added.
+ * - disclose(): We use disclose() to reveal the final computed sum and write it to the public ledger state.
+ */
+
+export ledger count: Uint<32>;
+
+constructor() {
+    count = 0;
+}
+
+export circuit increment(secretIncrement: Uint<32>): [] {
+    count = disclose((count + secretIncrement) as Uint<32>);
+}
