@@ -28,17 +28,28 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       const laceApi = window.midnight[walletKey];
       
       let api;
-      try {
-        // Try connecting to the current network the user is on by not specifying one,
-        // or let the wallet decide.
-        api = await laceApi.connect();
-      } catch (connectErr: any) {
-         throw new Error(`Wallet rejected connection: ${connectErr.message || JSON.stringify(connectErr)}`);
+      let lastError;
+      
+      // We will attempt to connect to the most common Midnight networks
+      const networks = ['preprod', 'preview', 'testnet'];
+      
+      for (const network of networks) {
+        try {
+          api = await laceApi.connect(network);
+          break; // If successful, exit the loop
+        } catch (connectErr: any) {
+          lastError = connectErr;
+        }
+      }
+
+      if (!api) {
+         throw new Error(`Wallet rejected connection on all networks. Ensure Lace is unlocked and on the correct network. Error: ${lastError?.message || JSON.stringify(lastError)}`);
       }
       
-      if (!api || !api.getUnshieldedAddress) {
+      if (!api.getUnshieldedAddress) {
          throw new Error("Connected successfully, but the wallet did not return the expected DApp API.");
       }
+      
       const { unshieldedAddress } = await api.getUnshieldedAddress();
       
       setAddress(unshieldedAddress);
