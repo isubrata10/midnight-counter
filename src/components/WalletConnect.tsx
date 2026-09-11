@@ -24,24 +24,18 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
         throw new Error('No Midnight-compatible wallets detected. Ensure Lace is installed and unlocked.');
       }
       
-      // Grab the first available wallet (usually Lace)
       const walletKey = Object.keys(window.midnight)[0];
       const laceApi = window.midnight[walletKey];
       
-      // Connect to the Preview network
       let api;
       try {
-        api = await laceApi.connect('preview');
+        // Try connecting to the current network the user is on by not specifying one,
+        // or let the wallet decide.
+        api = await laceApi.connect();
       } catch (connectErr: any) {
-        // Fallback: some older versions might use a different network string or just connect()
-        try {
-           api = await laceApi.connect();
-        } catch(fallbackErr: any) {
-           throw new Error('Connection was rejected by the user or an internal error occurred.');
-        }
+         throw new Error(`Wallet rejected connection: ${connectErr.message || JSON.stringify(connectErr)}`);
       }
       
-      // Fetch the unshielded address
       if (!api || !api.getUnshieldedAddress) {
          throw new Error("Connected successfully, but the wallet did not return the expected DApp API.");
       }
