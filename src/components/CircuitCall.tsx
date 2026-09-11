@@ -39,7 +39,7 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
   };
 
   return (
-    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+    <div style={{ padding: '20px', background: 'rgba(0, 0, 0, 0.7)', border: '1px solid #444', color: 'white', borderRadius: '8px' }}>
       <h2>Interact with Contract</h2>
       <p style={{ fontStyle: 'italic', color: '#555' }}>Proved without revealing your input</p>
       

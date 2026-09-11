@@ -62,7 +62,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   };
 
   return (
-    <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', marginBottom: '20px' }}>
+    <div style={{ padding: '20px', background: 'rgba(0, 0, 0, 0.7)', border: '1px solid #444', color: 'white', borderRadius: '8px', marginBottom: '20px' }}>
       <h2>Wallet Connection</h2>
       
       {error && <div style={{ color: '#d32f2f', padding: '10px', background: '#ffebee', marginBottom: '10px', borderRadius: '4px' }}>
