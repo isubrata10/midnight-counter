@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Wallet } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -14,6 +15,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [address, setAddress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [network, setNetwork] = useState<string>('Disconnected');
 
   const connectWallet = async () => {
     setError(null);
@@ -21,42 +23,47 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     
     try {
       if (!window.midnight || Object.keys(window.midnight).length === 0) {
-        throw new Error('No Midnight-compatible wallets detected. Ensure Lace is installed and unlocked.');
+        throw new Error('No compatible wallet found. Please install Lace.');
       }
       
       const walletKey = Object.keys(window.midnight)[0];
       const laceApi = window.midnight[walletKey];
       
       let api;
-      let lastError;
+      let connectedNetwork = '';
       
-      // We will attempt to connect to the most common Midnight networks
-      const networks = ['preprod', 'preview', 'testnet'];
-      
-      for (const network of networks) {
+      const networksToTry = ['preprod', 'preview', 'testnet'];
+      for (const net of networksToTry) {
         try {
-          api = await laceApi.connect(network);
-          break; // If successful, exit the loop
-        } catch (connectErr: any) {
-          lastError = connectErr;
+          api = await laceApi.connect(net);
+          connectedNetwork = net;
+          break;
+        } catch (e) {
+          // Continue to next network
         }
       }
 
       if (!api) {
-         throw new Error(`Wallet rejected connection on all networks. Ensure Lace is unlocked and on the correct network. Error: ${lastError?.message || JSON.stringify(lastError)}`);
+         try {
+           api = await laceApi.connect();
+           connectedNetwork = 'unknown';
+         } catch(e) {
+           throw new Error('Connection rejected by wallet.');
+         }
       }
       
-      if (!api.getUnshieldedAddress) {
-         throw new Error("Connected successfully, but the wallet did not return the expected DApp API.");
+      if (!api || !api.getUnshieldedAddress) {
+         throw new Error("Invalid API returned from wallet.");
       }
       
       const { unshieldedAddress } = await api.getUnshieldedAddress();
       
       setAddress(unshieldedAddress);
+      setNetwork(connectedNetwork);
       if (onConnect) onConnect(api);
       
     } catch (err: any) {
-      setError(err.message || 'An unknown error occurred during connection.');
+      setError(err.message || 'Connection failed.');
     } finally {
       setIsLoading(false);
     }
@@ -64,41 +71,43 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
 
   const disconnectWallet = () => {
     setAddress(null);
+    setNetwork('Disconnected');
     setError(null);
     if (onConnect) onConnect(null);
   };
 
+  const formatAddress = (addr: string) => {
+    if (addr.length < 12) return addr;
+    return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
+  };
+
   return (
-    <div style={{ padding: '20px', background: 'rgba(0, 0, 0, 0.7)', border: '1px solid #444', color: 'white', borderRadius: '8px', marginBottom: '20px' }}>
-      <h2>Wallet Connection</h2>
+    <nav className="navbar">
+      <div className="nav-brand">
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--text-main)' }}></div>
+        Midnight Counter
+      </div>
       
-      {error && <div style={{ color: '#ff5252', padding: '10px', background: 'rgba(255,0,0,0.1)', marginBottom: '10px', borderRadius: '4px' }}>
-        <strong>Error:</strong> {error}
-      </div>}
+      <div className="nav-controls">
+        <span className="network-badge">{network}</span>
+        
+        {!address ? (
+          <button className="btn btn-outline" onClick={connectWallet} disabled={isLoading}>
+            {isLoading ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        ) : (
+          <button className="btn btn-outline" onClick={disconnectWallet} title={address}>
+            <Wallet size={16} />
+            {formatAddress(address)}
+          </button>
+        )}
+      </div>
       
-      {!address ? (
-        <div>
-          <p>Status: <span style={{ color: 'gray' }}>Disconnected</span></p>
-          <button 
-            onClick={connectWallet} 
-            disabled={isLoading}
-            style={{ padding: '8px 16px', cursor: isLoading ? 'wait' : 'pointer' }}
-          >
-            {isLoading ? '<span className="spinner"></span> Connecting...' : 'Connect Lace Wallet'}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p>Status: <strong style={{ color: '#4caf50' }}>Connected</strong></p>
-          <p>Address: <span style={{ fontFamily: 'monospace', background: 'rgba(255,255,255,0.1)', padding: '2px 4px' }}>{address}</span></p>
-          <button 
-            onClick={disconnectWallet} 
-            style={{ padding: '8px 16px', cursor: 'pointer' }}
-          >
-            Disconnect Wallet
-          </button>
+      {error && (
+        <div style={{ position: 'absolute', top: 80, right: 20, zIndex: 100 }} className="alert alert-error">
+          {error}
         </div>
       )}
-    </div>
+    </nav>
   );
 }
