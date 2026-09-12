@@ -42,6 +42,7 @@ An on-chain observer can see that the counter's total value has increased, and t
    npm run dev
    ```
 4. Open the application in your browser (usually `http://localhost:5173`).
+   # vercel link - midnight-counter-omega.vercel.app
 
 ## Demo Video
 [PLACEHOLDER — I will add the link after recording]
