@@ -1,4 +1,6 @@
 # Midnight Counter dApp
+[![CI Status](https://github.com/isubrata10/midnight-counter/actions/workflows/ci.yml/badge.svg)](https://github.com/isubrata10/midnight-counter/actions/workflows/ci.yml)
+
 > A privacy-preserving counter application on the Midnight Network where users can increment the total without revealing their individual additions.
 
 ## Live Demo

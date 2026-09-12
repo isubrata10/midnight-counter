@@ -1,0 +1,37 @@
+name: Midnight CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js v22
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Install Compact Compiler
+      run: |
+        # Download and install the Midnight Compact Compiler
+        curl -L https://github.com/midnightntwrk/compact/releases/latest/download/compact-linux-x64 -o compact
+        chmod +x compact
+        sudo mv compact /usr/local/bin/
+
+    - name: Compile Contract
+      run: compact compile contracts/counter.compact managed/counter
+
+    - name: Run Test Suite
+      run: npm test
