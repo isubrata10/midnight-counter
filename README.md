@@ -44,5 +44,5 @@ An on-chain observer can see that the counter's total value has increased, and t
 4. Open the application in your browser (usually `http://localhost:5173`).
    # vercel link - midnight-counter-omega.vercel.app
 
-## Demo Video
-[PLACEHOLDER — I will add the link after recording]
+## Demo Video 
+https://drive.google.com/drive/folders/1xmOdmozS5VXBbA8zDFm2z0b6LBYRwcNz
