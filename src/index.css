@@ -8,3 +8,32 @@ body {
   color: white;
   min-height: 100vh;
 }
+
+/* Spinner Animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  vertical-align: text-bottom;
+  margin-right: 8px;
+}
+
+/* Mobile Responsiveness */
+#root {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.2em; }
+}

@@ -84,7 +84,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
             disabled={isLoading}
             style={{ padding: '8px 16px', cursor: isLoading ? 'wait' : 'pointer' }}
           >
-            {isLoading ? 'Connecting...' : 'Connect Lace Wallet'}
+            {isLoading ? '<span className="spinner"></span> Connecting...' : 'Connect Lace Wallet'}
           </button>
         </div>
       ) : (

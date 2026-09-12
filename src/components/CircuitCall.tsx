@@ -52,7 +52,7 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
         disabled={isLoading || !connectedAPI}
         style={{ padding: '10px 20px', cursor: (isLoading || !connectedAPI) ? 'not-allowed' : 'pointer' }}
       >
-        {isLoading ? 'Generating Zero-Knowledge Proof...' : 'Increment Counter (Private)'}
+        {isLoading ? '<span className="spinner"></span> Generating Zero-Knowledge Proof...' : 'Increment Counter (Private)'}
       </button>
 
       {txHash && (
