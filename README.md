@@ -56,4 +56,5 @@ This repository is configured with a GitHub Actions CI/CD pipeline that automati
 See PROPOSAL.md
 
 ## Demo Video
-https://drive.google.com/drive/folders/1xmOdmozS5VXBbA8zDFm2z0b6LBYRwcNz
+https://drive.google.com/file/d/1a11Olk6kIT-gLPPEohgOTZPUAtuI4Jxk/view?usp=drive_link
+
