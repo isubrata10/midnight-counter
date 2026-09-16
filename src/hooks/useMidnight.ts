@@ -1,25 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { parseCoinPublicKeyToHex, parseEncPublicKeyToHex } from '@midnight-ntwrk/midnight-js-utils';
 
-/**
- * useMidnight Hook
- * 
- * In a full production implementation, this hook would initialize the Midnight.js SDK 
- * and return the configured providers (WalletProvider, ProvingProvider, PublicDataProvider).
- */
-export function useMidnight(connectedAPI: any) {
+const NETWORK = 'preprod';
+setNetworkId(NETWORK);
+
+export function useMidnight() {
+  const [api, setApi] = useState<any>(null);
   const [providers, setProviders] = useState<any>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (connectedAPI) {
-      // Mock initialization of Midnight SDK providers
+  const connect = async () => {
+    try {
+      if (!(window as any).midnight) throw new Error("Lace wallet not found");
+      const walletKey = Object.keys((window as any).midnight)[0];
+      const connector = (window as any).midnight[walletKey];
+      const connectedWallet = await connector.connect(NETWORK);
+      setApi(connectedWallet);
+      
+      const config = await connectedWallet.getConfiguration();
+      
+      const publicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
+      
+      const zkConfigProvider = {
+         getZKIR: async () => new Uint8Array(),
+         getProverKey: async () => new Uint8Array(),
+         getVerifierKey: async () => new Uint8Array(),
+      };
+      
+      const proofProvider = httpClientProofProvider(config.proverServerUri || 'http://localhost:6300', zkConfigProvider as any);
+      
+      const shieldedAddr = await connectedWallet.getShieldedAddress();
+      const walletProvider = {
+         balanceTx: async () => {
+             throw new Error("Use balanceUnsealedTransaction via DApp connector.");
+         },
+         getCoinPublicKey: () => parseCoinPublicKeyToHex(shieldedAddr.shieldedCoinPublicKey, config.networkId as any),
+         getEncryptionPublicKey: () => parseEncPublicKeyToHex(shieldedAddr.shieldedEncryptionPublicKey, config.networkId as any),
+      };
+
       setProviders({
-        wallet: connectedAPI,
-        isInitialized: true
+        publicDataProvider,
+        zkConfigProvider,
+        proofProvider,
+        walletProvider,
       });
-    } else {
-      setProviders(null);
+      
+      const { unshieldedAddress } = await connectedWallet.getUnshieldedAddress();
+      setAddress(unshieldedAddress);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || String(err));
     }
-  }, [connectedAPI]);
+  };
 
-  return providers;
+  return { connect, providers, address, api, error };
 }
