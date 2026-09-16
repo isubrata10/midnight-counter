@@ -25,18 +25,27 @@ export function useMidnight() {
       
       const publicDataProvider = indexerPublicDataProvider(config.indexerUri, config.indexerWsUri);
       
+      const fetchBytes = async (path: string) => {
+        const res = await fetch(path);
+        if (!res.ok) throw new Error(`Failed to load artifact: ${path}`);
+        return new Uint8Array(await res.arrayBuffer());
+      };
+
       const zkConfigProvider = {
-         getZKIR: async () => new Uint8Array(),
-         getProverKey: async () => new Uint8Array(),
-         getVerifierKey: async () => new Uint8Array(),
+         getZKIR: async (id: string) => fetchBytes(`/counter/zkir/${id}.zkir`),
+         getProverKey: async (id: string) => fetchBytes(`/counter/keys/${id}.pk`),
+         getVerifierKey: async (id: string) => fetchBytes(`/counter/keys/${id}.vk`),
       };
       
       const proofProvider = httpClientProofProvider(config.proverServerUri || 'http://localhost:6300', zkConfigProvider as any);
       
       const shieldedAddr = await connectedWallet.getShieldedAddress();
       const walletProvider = {
-         balanceTx: async () => {
-             throw new Error("Use balanceUnsealedTransaction via DApp connector.");
+         // @ts-ignore
+         balanceTx: async (_tx: any, _ttl?: Date) => {
+             // In browser, we don't balance inside midnight-js.
+             // We capture the unproven transaction, then use DAppConnector.
+             throw new Error("balanceTx unsupported. Use DAppConnector API.");
          },
          getCoinPublicKey: () => parseCoinPublicKeyToHex(shieldedAddr.shieldedCoinPublicKey, config.networkId as any),
          getEncryptionPublicKey: () => parseEncPublicKeyToHex(shieldedAddr.shieldedEncryptionPublicKey, config.networkId as any),

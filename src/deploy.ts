@@ -7,13 +7,15 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { WalletBuilder } from '@midnight-ntwrk/wallet';
 import * as zswap from '@midnight-ntwrk/zswap';
-import { randomBytes } from 'crypto';
+
 import path from 'path';
 
 setNetworkId('preprod');
 
 async function main() {
-  const seed = randomBytes(32).toString('hex');
+  const seed = process.env.SEED;
+  if (!seed) throw new Error("SEED environment variable is required to deploy.");
+
   
   const indexerUrl = 'https://indexer.preprod.midnight.network/api/v1/graphql';
   const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v1/graphql';
@@ -31,10 +33,18 @@ async function main() {
     nodeUrl,
     seed,
     zswap.NetworkId.TestNet,
-    'warn'
+    'info'
   );
 
   wallet.start();
+
+  const patchedWallet = Object.create(wallet);
+  // @ts-ignore
+  patchedWallet.balanceTx = async (_tx: any, _ttl?: Date) => {
+    throw new Error("balanceTx not natively supported. Need testnet tokens in wallet SDK v5.");
+  };
+  patchedWallet.getCoinPublicKey = () => "" as any;
+  patchedWallet.getEncryptionPublicKey = () => "" as any;
 
   const providers = {
     privateStateProvider: levelPrivateStateProvider({
@@ -45,20 +55,25 @@ async function main() {
     publicDataProvider,
     zkConfigProvider,
     proofProvider,
-    walletProvider: wallet, 
-    midnightProvider: wallet,
+    walletProvider: patchedWallet, 
+    midnightProvider: patchedWallet,
   };
 
   console.log("Deploying Counter contract...");
-  const contract = await deployContract(providers as any, {
-    compiledContract: Contract as any,
-    initialPrivateState: undefined,
-  } as any);
+  try {
+    const contract = await deployContract(providers as any, {
+      compiledContract: Contract as any,
+      initialPrivateState: undefined,
+    } as any);
 
-  console.log("Contract deployed!");
-  console.log("Address:", contract.deployTxData.public.contractAddress);
+    console.log("Contract deployed!");
+    console.log("Address:", contract.deployTxData.public.contractAddress);
+  } catch (err) {
+    console.error("Deployment failed:", err);
+  }
   
   await wallet.close();
+  process.exit(0);
 }
 
 main().catch(console.error);
