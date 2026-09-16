@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
-import { parseCoinPublicKeyToHex, parseEncPublicKeyToHex } from '@midnight-ntwrk/midnight-js-utils';
+import { parseCoinPublicKeyToHex, parseEncPublicKeyToHex, toHex, fromHex } from '@midnight-ntwrk/midnight-js-utils';
+import { Transaction, NetworkId } from '@midnight-ntwrk/zswap';
 
 const NETWORK = 'preprod';
 setNetworkId(NETWORK);
@@ -41,14 +42,21 @@ export function useMidnight() {
       
       const shieldedAddr = await connectedWallet.getShieldedAddress();
       const walletProvider = {
-         // @ts-ignore
-         balanceTx: async (_tx: any, _ttl?: Date) => {
-             // In browser, we don't balance inside midnight-js.
-             // We capture the unproven transaction, then use DAppConnector.
-             throw new Error("balanceTx unsupported. Use DAppConnector API.");
+         balanceTx: async (tx: any, _ttl?: Date) => {
+             const serialized = toHex(tx.serialize(NetworkId.TestNet as any));
+             const balancedHex = await connectedWallet.balanceUnsealedTransaction(serialized);
+             return Transaction.deserialize(fromHex(balancedHex), NetworkId.TestNet as any) as any;
          },
-         getCoinPublicKey: () => parseCoinPublicKeyToHex(shieldedAddr.shieldedCoinPublicKey, config.networkId as any),
-         getEncryptionPublicKey: () => parseEncPublicKeyToHex(shieldedAddr.shieldedEncryptionPublicKey, config.networkId as any),
+         getCoinPublicKey: () => parseCoinPublicKeyToHex(shieldedAddr.shieldedCoinPublicKey, NetworkId.TestNet as any),
+         getEncryptionPublicKey: () => parseEncPublicKeyToHex(shieldedAddr.shieldedEncryptionPublicKey, NetworkId.TestNet as any),
+      };
+
+      const midnightProvider = {
+         submitTx: async (tx: any) => {
+             const serialized = toHex(tx.serialize(NetworkId.TestNet as any));
+             await connectedWallet.submitTransaction(serialized);
+             return tx.transactionHash();
+         }
       };
 
       setProviders({
@@ -56,6 +64,7 @@ export function useMidnight() {
         zkConfigProvider,
         proofProvider,
         walletProvider,
+        midnightProvider
       });
       
       const { unshieldedAddress } = await connectedWallet.getUnshieldedAddress();

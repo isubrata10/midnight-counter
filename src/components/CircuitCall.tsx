@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import { useMidnight } from '../hooks/useMidnight';
-import { createUnprovenCallTx } from '@midnight-ntwrk/midnight-js-contracts';
+import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { Contract } from '../../managed/counter/contract/index.js';
 
 export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
@@ -40,37 +40,24 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
     
     setStep('preparing');
     try {
-      // Create the unproven transaction using the Midnight JS contract SDK
-      const unprovenTx = await createUnprovenCallTx(providers, {
-        compiledContract: Contract as any,
-        circuitId: 'increment',
-        contractAddress: CONTRACT_ADDRESS,
-        args: [BigInt(amount)],
-      } as any);
-
       setStep('proving');
-      // Request proof from the proving provider (or let the DApp connector prove it)
-      // Since we don't have local ZK keys fully loaded in the browser, 
-      // the actual generation requires the user's proving server.
-      // DApp connector balances and seals the transaction.
-      const keyMaterialProvider = {
-         getCoinPublicKey: providers.walletProvider.getCoinPublicKey,
-         getEncryptionPublicKey: providers.walletProvider.getEncryptionPublicKey
-      };
       
-      const provingProvider = await api.getProvingProvider(keyMaterialProvider as any);
-      const provenTx = await provingProvider.prove(unprovenTx, 'increment');
+      const contract = await findDeployedContract(providers, {
+        contractAddress: CONTRACT_ADDRESS,
+        compiledContract: Contract as any
+      });
       
       setStep('approving');
-      const balancedTx = await api.balanceUnsealedTransaction(provenTx);
+      const result = await contract.callTx.increment(BigInt(amount));
       
       setStep('submitting');
-      const txIdentifier = await api.submitTransaction(balancedTx);
-      
-      setTxHash(txIdentifier);
+      setTxHash(result.public.txHash);
       setStep('confirmed');
       
-      // Wait a moment then refresh the indexer state
+      const state = await providers.publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+      if (state && state.data && state.data.count) {
+         setPublicTotal(state.data.count.toString());
+      }
       
     } catch (e: any) {
       console.error(e);

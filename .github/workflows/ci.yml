@@ -25,7 +25,7 @@ jobs:
 
     - name: Compile Contract
       run: |
-        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter || echo "Assuming managed/ contains the pre-compiled output"
+        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter
 
     - name: Run Test Suite
       run: npm test

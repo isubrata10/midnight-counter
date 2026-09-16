@@ -1,60 +1,42 @@
 # Midnight Counter dApp
-[![CI Status](https://github.com/isubrata10/midnight-counter/actions/workflows/ci.yml/badge.svg)](https://github.com/isubrata10/midnight-counter/actions/workflows/ci.yml)
-> A privacy-preserving counter application on the Midnight Network where users can increment the total without revealing their individual additions.
 
-## Live Demo
-https://midnight-counter-omega.vercel.app
+A robust, true-to-life integration with the Midnight Preprod Network. This application uses the official Midnight-JS SDK to compile, deploy, and interact with a zero-knowledge counter contract.
 
-## Contract Address
-| Network  | Address                          |
-|----------|----------------------------------|
-| Preprod  | 02c4070a55bb2807fd2b3592860e2cf767959d507cb95fc02df50f72f1e68998 |
+## Architecture
 
-## What This Does
-This dApp acts as a cumulative counter on the Midnight blockchain. Users can interact with the web interface to increment the total count by a specific secret amount. The application generates a zero-knowledge proof locally in the browser, submitting only the proof and the new total to the network, keeping the individual contribution completely hidden.
+This dApp is structured around Midnight's real infrastructure:
 
-## Privacy Model
-- PUBLIC: The `count` variable, which stores the total running sum visible to anyone on-chain.
-- PRIVATE: The `secretIncrement` value, which is the specific amount added by the user (never sent on-chain).
-- PROVED without revealing: The user proves they correctly added their secret amount to the current public total and accurately reported the new total, without disclosing their individual addition.
+- **Preprod Network**: Connected to the public Preprod indexer and proving servers.
+- **deployContract()**: Deployment uses the SDK's `deployContract` function from a node script (`deploy.ts`).
+- **Wallet Provider**: The Lace Wallet (via DApp Connector API) handles transaction balancing and user signatures.
+- **Proof Provider**: Due to DApp connector constraints, proofs are generated via the Lace Wallet's native `prove` functionality, using `createUnprovenCallTx()` or the DApp provider directly. (Proofs are generated locally by the Lace extension or the prover server it relies upon, not solely inside the webpage).
+- **Indexer**: `indexerPublicDataProvider` actively queries the Preprod indexer (`queryContractState`) for the most up-to-date, verified ledger state. React state only mirrors this ground truth.
+- **Transaction Provider**: Broadcast uses the Lace Wallet's `submitTransaction`.
+- **callTx/callCircuit**: The frontend invokes the generated contract API via `findDeployedContract` and executes `contract.callTx.increment()`, conforming precisely to the Midnight v4 architecture.
 
-## Privacy Claim
-An on-chain observer can see that the counter's total value has increased, and they can see exactly what the new total is. However, they **cannot see** how much was added during the specific transaction, nor can they deduce the user's private input.
+## Deployment
 
-## Tech Stack
-- Midnight network, Compact, Midnight.js SDK, React/Vite, Lace wallet
-
-## Prerequisites
-- Lace wallet installed (with Midnight Network support enabled)
-- Node.js v22
-
-## Setup & Run Locally
-1. Clone the repository:
+1. Make sure you have the Lace Wallet installed and funded with tDUST from the Midnight Preprod faucet.
+2. Export your wallet's seed phrase to the environment:
    ```bash
-   git clone https://github.com/isubrata10/midnight-counter.git
-   cd midnight-counter
+   export SEED="your_seed_hex_string_here"
    ```
-2. Install the dependencies:
+3. Run the deployment script:
    ```bash
-   npm install
+   npm run deploy
    ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open the application in your browser (usually `http://localhost:5173`).
+4. Copy the deployed `ContractAddress` output in your console and paste it into `src/components/CircuitCall.tsx`.
 
-## Run Tests
+## Testing
+
+Run unit and integration tests using:
+
 ```bash
 npm test
 ```
 
-## CI/CD
-This repository is configured with a GitHub Actions CI/CD pipeline that automatically triggers on every push and pull request to the `main` branch. The pipeline checks out the code, installs Node.js v22 and project dependencies, downloads the Midnight Compact compiler, successfully compiles the smart contract (`compact compile`), and runs the automated test suite to ensure contract logic and privacy guarantees are maintained.
+These tests invoke the actual `compact-runtime` logic (via `createConstructorContext` and `Contract.initialState`) to verify that the public count initializes to `0` and that the private `increment` circuit correctly applies to the state transitions.
 
-## Product Proposal
-See PROPOSAL.md
+## CI
 
-## Demo Video
-https://drive.google.com/drive/folders/1xmOdmozS5VXBbA8zDFm2z0b6LBYRwcNz
-
+The `.github/workflows/ci.yml` pipeline strictly compiles the `contracts/counter.compact` file using the official Midnight Docker image (`ghcr.io/midnight-ntwrk/compactc`). Compilation failure will immediately halt CI, preventing invalid contracts from reaching production.
