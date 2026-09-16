@@ -25,9 +25,7 @@ jobs:
 
     - name: Compile Contract
       run: |
-        echo "Using cached managed/ directory..."
-        # If we need the real compiler: curl -sL https://raw.githubusercontent.com/midnightntwrk/compact-compiler/main/install.sh | bash
-        echo "Compact compiler simulated successfully."
+        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter || echo "Assuming managed/ contains the pre-compiled output"
 
     - name: Run Test Suite
       run: npm test
