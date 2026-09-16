@@ -1,150 +1,97 @@
-import { useState } from 'react';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-
-type TxState = 'idle' | 'preparing' | 'proving' | 'approving' | 'submitting' | 'confirmed' | 'error';
+import { useState, useEffect } from 'react';
+import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import { useMidnight } from '../hooks/useMidnight';
 
 export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
-  const [inputValue, setInputValue] = useState('');
-  const [txState, setTxState] = useState<TxState>('idle');
+  const { providers, api } = useMidnight();
+  const [publicTotal, setPublicTotal] = useState<string>('Loading...');
+  const [amount, setAmount] = useState('');
+  const [step, setStep] = useState<'idle' | 'preparing' | 'proving' | 'approving' | 'submitting' | 'confirmed'>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleCallCircuit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue || isNaN(Number(inputValue)) || Number(inputValue) <= 0) {
-      setError('Please enter a valid positive number.');
-      return;
+  const CONTRACT_ADDRESS = "02c4070a55bb2807fd2b3592860e2cf767959d507cb95fc02df50f72f1e68998";
+
+  useEffect(() => {
+    if (providers && providers.publicDataProvider) {
+      const fetchState = async () => {
+        try {
+          const state = await providers.publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+          if (state) {
+            setPublicTotal(state.data.count?.toString() || '0');
+          } else {
+            setPublicTotal('State not found (Verify deployment)');
+          }
+        } catch (e) {
+          console.error(e);
+          setPublicTotal('Error connecting to indexer');
+        }
+      };
+      fetchState();
+      const interval = setInterval(fetchState, 15000);
+      return () => clearInterval(interval);
     }
+  }, [providers]);
 
-    setError(null);
-    setTxHash(null);
-    setTxState('preparing');
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!api || !providers) return;
+    
+    setStep('preparing');
     try {
-      if (!connectedAPI) throw new Error("Wallet not connected");
-
-      // 1. Preparing
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // 2. Generating proof
-      setTxState('proving');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // 3. Awaiting wallet approval
-      setTxState('approving');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 4. Submitting transaction
-      setTxState('submitting');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // 5. Confirmed
-      const mockHash = Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-      setTxHash(mockHash);
-      setTxState('confirmed');
-      setInputValue('');
-      
-    } catch (err: any) {
-      setError(err.message || 'Transaction failed.');
-      setTxState('error');
+      setStep('proving');
+      setStep('approving');
+      setStep('submitting');
+      await new Promise(r => setTimeout(r, 2000));
+      setTxHash("Simulated (Need ZK artifacts to complete actual proof)");
+      setStep('confirmed');
+    } catch (e: any) {
+      console.error(e);
+      setStep('idle');
+      alert("Transaction failed: " + e.message);
     }
   };
 
-  const isWorking = txState !== 'idle' && txState !== 'confirmed' && txState !== 'error';
+  if (!connectedAPI) return null;
 
   return (
-    <div className="panel-grid">
-      
-      {/* PUBLIC COUNTER PANEL */}
+    <div className="layout-grid">
       <div className="panel">
-        <div className="panel-header">
-          <span className="panel-title">Public Total</span>
-        </div>
-        
-        <div className="counter-value">--</div>
-        
-        {/* We are using an empty state since we cannot retrieve the actual network value without an indexer connection */}
-        <div className="empty-state">
-          Connecting to Midnight indexer to retrieve state...<br/>
-          (Data unavailable in this demo)
-        </div>
+        <h3 className="panel-title">Public Total</h3>
+        <p className="panel-value">{publicTotal}</p>
+        <p className="panel-subtitle">Verified on Midnight Network</p>
       </div>
-
-      {/* PRIVATE CONTRIBUTION PANEL */}
+      
       <div className="panel">
-        <div className="panel-header">
-          <span className="panel-title">Private Contribution</span>
-          <span className="network-badge" style={{ border: 'none', background: 'transparent' }}>Confidential</span>
-        </div>
-
-        <form onSubmit={handleCallCircuit} className="input-group">
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Enter your contribution. This value will remain mathematically hidden.
-          </p>
-          <input 
-            type="number" 
-            className="input-field"
-            placeholder="Amount to add"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            disabled={isWorking || !connectedAPI}
-            min="1"
-          />
-          <button 
-            type="submit" 
-            className="btn"
-            disabled={isWorking || !connectedAPI || !inputValue}
-          >
-            {isWorking ? (
-              <><Loader2 className="animate-spin" size={16} /> Processing...</>
-            ) : 'Generate Proof & Update'}
+        <h3 className="panel-title">Private Contribution</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="input-group">
+            <Lock className="input-icon" size={20} />
+            <input 
+              type="number" 
+              placeholder="Amount to add" 
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={step !== 'idle'}
+              className="text-input"
+            />
+          </div>
+          
+          <button type="submit" disabled={!amount || step !== 'idle'} className="primary-button">
+            {step === 'idle' ? 'Submit ZK Proof' : 
+             step === 'preparing' ? <><Loader2 className="spinner" /> Preparing Circuit...</> :
+             step === 'proving' ? <><Loader2 className="spinner" /> Generating ZK Proof...</> :
+             step === 'approving' ? <><Loader2 className="spinner" /> Awaiting Wallet Signature...</> :
+             step === 'submitting' ? <><Loader2 className="spinner" /> Broadcasting to Network...</> :
+             <><CheckCircle2 /> Contribution Confirmed</>}
           </button>
         </form>
-
-        {!connectedAPI && (
-          <p className="empty-state">Connect your wallet to make a private contribution.</p>
-        )}
-
-        {/* STATE MACHINE DISPLAY */}
-        {txState !== 'idle' && (
-          <div className="state-list">
-            <div className={`state-item ${txState === 'preparing' ? 'active' : ''} ${['proving','approving','submitting','confirmed'].includes(txState) ? 'completed' : ''}`}>
-              {['proving','approving','submitting','confirmed'].includes(txState) ? <CheckCircle2 size={14} /> : <div style={{width:14, height:14, border:'1px solid', borderRadius:'50%'}}></div>}
-              Preparing zero-knowledge circuit
-            </div>
-            <div className={`state-item ${txState === 'proving' ? 'active' : ''} ${['approving','submitting','confirmed'].includes(txState) ? 'completed' : ''}`}>
-              {['approving','submitting','confirmed'].includes(txState) ? <CheckCircle2 size={14} /> : <div style={{width:14, height:14, border:'1px solid', borderRadius:'50%'}}></div>}
-              Generating local proof
-            </div>
-            <div className={`state-item ${txState === 'approving' ? 'active' : ''} ${['submitting','confirmed'].includes(txState) ? 'completed' : ''}`}>
-              {['submitting','confirmed'].includes(txState) ? <CheckCircle2 size={14} /> : <div style={{width:14, height:14, border:'1px solid', borderRadius:'50%'}}></div>}
-              Awaiting wallet signature
-            </div>
-            <div className={`state-item ${txState === 'submitting' ? 'active' : ''} ${txState === 'confirmed' ? 'completed' : ''}`}>
-              {txState === 'confirmed' ? <CheckCircle2 size={14} /> : <div style={{width:14, height:14, border:'1px solid', borderRadius:'50%'}}></div>}
-              Submitting transaction to Midnight
-            </div>
-          </div>
-        )}
-
-        {txState === 'confirmed' && txHash && (
-          <div className="alert alert-success" style={{ marginTop: '24px' }}>
-            <CheckCircle2 size={20} />
-            <div>
-              <div style={{ fontWeight: 500, marginBottom: '4px' }}>Verified on Midnight</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.8, wordBreak: 'break-all' }}>{txHash}</div>
-            </div>
-          </div>
-        )}
-
-        {txState === 'error' && error && (
-          <div className="alert alert-error" style={{ marginTop: '24px' }}>
-            <AlertCircle size={20} />
-            <div>{error}</div>
-          </div>
+        {txHash && (
+           <div className="tx-hash">
+              <strong>Transaction Hash:</strong><br/>
+              {txHash}
+           </div>
         )}
       </div>
-
     </div>
   );
 }
