@@ -16,12 +16,8 @@ import { firstValueFrom } from 'rxjs';
 
 test('Integration Test', async () => {
   if (process.env.MIDNIGHT_NETWORK !== 'preprod' || !process.env.MIDNIGHT_WALLET_SEED || !process.env.VITE_COUNTER_CONTRACT_ADDRESS) {
-    if (process.env.npm_lifecycle_event === 'test:integration') {
       console.error("Integration test requires MIDNIGHT_NETWORK=preprod, MIDNIGHT_WALLET_SEED, and VITE_COUNTER_CONTRACT_ADDRESS");
       process.exit(1);
-    }
-    console.log("Skipping integration test in normal suite. Missing credentials.");
-    return;
   }
 
   setNetworkId('preprod');
