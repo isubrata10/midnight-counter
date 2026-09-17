@@ -38,7 +38,7 @@ export function useMidnight() {
          getVerifierKey: async (id: string) => fetchBytes(`/counter/keys/${id}.vk`),
       };
       
-      const proofProvider = httpClientProofProvider(config.proverServerUri || 'http://localhost:6300', zkConfigProvider as any);
+      const proofProvider = httpClientProofProvider(config.proverServerUri || 'http://127.0.0.1:6300', zkConfigProvider as any);
       
       const shieldedAddr = await connectedWallet.getShieldedAddress();
       const walletProvider = {

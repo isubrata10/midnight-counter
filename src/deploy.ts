@@ -55,7 +55,7 @@ async function main() {
   const providers = {
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: 'deploy-wallet-state',
-      privateStoragePasswordProvider: async () => 'super_secret_strong_password_1234',
+      privateStoragePasswordProvider: async () => process.env.MIDNIGHT_WALLET_PASSWORD || 'deploy_password',
       accountId: 'deployer'
     }),
     publicDataProvider,

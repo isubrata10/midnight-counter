@@ -62,7 +62,7 @@ test('Integration Test', async () => {
   const providers = {
     privateStateProvider: levelPrivateStateProvider({
       privateStateStoreName: 'integration-test-wallet-state',
-      privateStoragePasswordProvider: async () => 'integration_password',
+      privateStoragePasswordProvider: async () => process.env.MIDNIGHT_WALLET_PASSWORD || 'integration_password',
       accountId: 'integration-tester'
     }),
     publicDataProvider,
