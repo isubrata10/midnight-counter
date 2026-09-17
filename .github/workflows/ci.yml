@@ -20,12 +20,18 @@ jobs:
         node-version: '22'
         cache: 'npm'
 
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Install Dependencies
       run: npm install
 
     - name: Compile Contract
-      run: |
-        docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter
+      run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter
 
     - name: Run Test Suite
       run: npm test
