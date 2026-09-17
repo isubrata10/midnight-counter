@@ -13,7 +13,7 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
   const [step, setStep] = useState<'idle' | 'preparing' | 'proving' | 'approving' | 'submitting' | 'confirmed'>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const CONTRACT_ADDRESS = "02c4070a55bb2807fd2b3592860e2cf767959d507cb95fc02df50f72f1e68998"; // UPDATE AFTER DEPLOYMENT
+  const CONTRACT_ADDRESS = import.meta.env.VITE_COUNTER_CONTRACT_ADDRESS;
 
   useEffect(() => {
     if (providers && providers.publicDataProvider) {
@@ -69,6 +69,16 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
   };
 
   if (!connectedAPI) return null;
+
+  if (!CONTRACT_ADDRESS) {
+    return (
+      <div className="layout-grid">
+        <div className="panel">
+          <p>Counter contract is not configured for Preprod.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="layout-grid">
