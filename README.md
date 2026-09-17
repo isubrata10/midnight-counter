@@ -7,12 +7,12 @@ A robust, true-to-life integration with the Midnight Preprod Network. This appli
 This dApp is structured around Midnight's real infrastructure:
 
 - **Preprod Network**: Connected to the public Preprod indexer and proving servers.
-- **deployContract()**: Deployment uses the SDK's `deployContract` function from a node script (`deploy.ts`).
-- **Wallet Provider**: The Lace Wallet (via DApp Connector API) handles transaction balancing and user signatures.
-- **Proof Provider**: Due to DApp connector constraints, proofs are generated via the Lace Wallet's native `prove` functionality, using `createUnprovenCallTx()` or the DApp provider directly. (Proofs are generated locally by the Lace extension or the prover server it relies upon, not solely inside the webpage).
+- **deployContract()**: Deployment uses the SDK's `deployContract` function from a node script (`src/deploy.ts`).
+- **Wallet Provider**: The Lace Wallet (via DApp Connector API) handles transaction balancing and user signatures via a custom `WalletProvider` adapter in `useMidnight.ts`.
+- **Proof Provider**: Proofs are generated via the configured `httpClientProofProvider` pointing to the Preprod prover server.
 - **Indexer**: `indexerPublicDataProvider` actively queries the Preprod indexer (`queryContractState`) for the most up-to-date, verified ledger state. React state only mirrors this ground truth.
 - **Transaction Provider**: Broadcast uses the Lace Wallet's `submitTransaction`.
-- **callTx/callCircuit**: The frontend invokes the generated contract API via `findDeployedContract` and executes `contract.callTx.increment()`, conforming precisely to the Midnight v4 architecture.
+- **callTx/callCircuit**: The frontend invokes the generated contract API via `findDeployedContract` and executes `contract.callTx.increment()`, conforming precisely to the Midnight architecture.
 
 ## Deployment
 
@@ -35,7 +35,7 @@ Run unit and integration tests using:
 npm test
 ```
 
-These tests invoke the actual `compact-runtime` logic (via `createConstructorContext` and `Contract.initialState`) to verify that the public count initializes to `0` and that the private `increment` circuit correctly applies to the state transitions.
+These tests invoke the actual `compact-runtime` logic (via `createCircuitContext` and `contract.circuits.increment`) to mathematically verify that the ledger state updates from `0` to `5` upon providing the secret increment witness.
 
 ## CI
 
