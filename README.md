@@ -10,7 +10,7 @@ To deploy to the real public Preprod network, follow these exact steps:
 2. **Compact Toolchain**: You need access to the private `ghcr.io/midnight-ntwrk/compactc` registry using a valid Midnight GitHub PAT.
 3. **Install**: Run `npm ci` to cleanly install dependencies.
 4. **Compile**: Run the compiler via Docker: `docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:0.19.0 contracts/counter.compact -o managed/counter`.
-5. **Proof Server**: Ensure you use the official Midnight Preprod Proof Server (`https://prover.preprod.midnight.network/api/v1`).
+5. **Proof Server**: Run the official compatible Midnight proof server locally at `http://127.0.0.1:6300` (required for node deployment scripts; frontend relies on Lace's prover configuration).
 6. **Wallet Setup**: Create a Midnight Lace wallet and configure it to the Preprod network.
 7. **Faucet**: Fund your wallet with tDUST from the official Midnight Preprod Faucet.
 8. **Deployment**: Export your seed phrase `export SEED="..."` and run `npm run deploy`.
@@ -25,7 +25,7 @@ To deploy to the real public Preprod network, follow these exact steps:
 
 ## Architecture
 
-- **Preprod Network**: Connected to the public Preprod indexer and proving servers.
+- **Preprod Network**: Connected to the public Preprod indexer (`/api/v3/graphql`) and your local/Lace proving servers.
 - **deployContract()**: Deployment uses the SDK's `deployContract` function from a node script (`src/deploy.ts`).
 - **Wallet Provider**: The Lace Wallet (via DApp Connector API) handles transaction balancing and user signatures via a custom `WalletProvider` adapter in `useMidnight.ts`.
 - **Proof Provider**: Proofs are generated via the configured `httpClientProofProvider` pointing to the Preprod prover server.
