@@ -26,7 +26,7 @@ test('Integration Test', async () => {
   const contractAddress = process.env.VITE_COUNTER_CONTRACT_ADDRESS;
 
   const indexerUrl = 'https://indexer.preprod.midnight.network/api/v3/graphql';
-  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v3/graphql';
+  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws';
   const proverUrl = 'http://127.0.0.1:6300';
   const nodeUrl = 'https://rpc.preprod.midnight.network';
 
