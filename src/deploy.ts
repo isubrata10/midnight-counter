@@ -1,6 +1,8 @@
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { deployContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { Contract } from '../managed/counter/contract/index.js';
+import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import { pipe } from 'effect';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
@@ -66,7 +68,7 @@ async function main() {
   console.log("Deploying Counter contract...");
   try {
     const contract = await deployContract(providers as any, {
-      compiledContract: Contract as any,
+      compiledContract: pipe(CompiledContract.make('counter', Contract as any), CompiledContract.withVacantWitnesses) as any,
       initialPrivateState: undefined,
     } as any);
 

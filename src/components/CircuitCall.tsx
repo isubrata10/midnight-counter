@@ -3,6 +3,8 @@ import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
 import { useMidnight } from '../hooks/useMidnight';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { Contract } from '../../managed/counter/contract/index.js';
+import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import { pipe } from 'effect';
 
 export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
   const { providers, api } = useMidnight();
@@ -44,7 +46,7 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
       
       const contract = await findDeployedContract(providers, {
         contractAddress: CONTRACT_ADDRESS,
-        compiledContract: Contract as any
+        compiledContract: pipe(CompiledContract.make('counter', Contract as any), CompiledContract.withVacantWitnesses) as any
       });
       
       setStep('approving');
