@@ -9,7 +9,7 @@ To deploy to the real public Preprod network, follow these exact steps:
 1. **Prerequisites**: Node v22, a compatible Midnight wallet (Lace), and Docker (for compiler).
 2. **Compact Toolchain**: You need access to the private `ghcr.io/midnight-ntwrk/compactc` registry using a valid Midnight GitHub PAT.
 3. **Install**: Run `npm ci` to cleanly install dependencies.
-4. **Compile**: Run the compiler via Docker: `docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter`.
+4. **Compile**: Run the compiler via Docker: `docker run --rm -v $(pwd):/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:0.19.0 contracts/counter.compact -o managed/counter`.
 5. **Proof Server**: Ensure you use the official Midnight Preprod Proof Server (`https://prover.preprod.midnight.network/api/v1`).
 6. **Wallet Setup**: Create a Midnight Lace wallet and configure it to the Preprod network.
 7. **Faucet**: Fund your wallet with tDUST from the official Midnight Preprod Faucet.

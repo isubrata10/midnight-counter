@@ -18,9 +18,9 @@ async function main() {
   const seed = process.env.SEED;
   if (!seed) throw new Error("SEED environment variable is required to deploy.");
 
-  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v1/graphql';
-  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v1/graphql';
-  const proverUrl = 'https://prover.preprod.midnight.network/api/v1';
+  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v3/graphql';
+  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v3/graphql';
+  const proverUrl = 'http://127.0.0.1:6300';
   const nodeUrl = 'https://rpc.preprod.midnight.network';
   
   const publicDataProvider = indexerPublicDataProvider(indexerUrl, indexerWsUrl);
@@ -76,6 +76,8 @@ async function main() {
     console.log("Address:", contract.deployTxData.public.contractAddress);
   } catch (err) {
     console.error("Deployment failed:", err);
+    await wallet.close();
+    process.exit(1);
   }
   
   await wallet.close();

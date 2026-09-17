@@ -28,13 +28,16 @@ jobs:
         password: ${{ secrets.GHCR_PAT }}
 
     - name: Install Dependencies
-      run: npm install
+      run: npm ci
 
     - name: Compile Contract
-      run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:latest contracts/counter.compact -o managed/counter
+      run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/midnight-ntwrk/compactc:0.19.0 contracts/counter.compact -o managed/counter
 
     - name: Run Test Suite
       run: npm test
 
     - name: Run Build
       run: npm run build
+
+    - name: Run Lint
+      run: npm run lint

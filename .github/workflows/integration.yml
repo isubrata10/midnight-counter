@@ -6,7 +6,6 @@ on:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
-    if: "${{ env.MIDNIGHT_WALLET_SEED != '' && env.VITE_COUNTER_CONTRACT_ADDRESS != '' }}"
     env:
       MIDNIGHT_WALLET_SEED: ${{ secrets.MIDNIGHT_WALLET_SEED }}
       VITE_COUNTER_CONTRACT_ADDRESS: ${{ secrets.MIDNIGHT_CONTRACT_ADDRESS }}
@@ -14,6 +13,17 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Verify Secrets
+      run: |
+        if [ -z "$MIDNIGHT_WALLET_SEED" ]; then
+          echo "Error: MIDNIGHT_WALLET_SEED secret is not configured."
+          exit 1
+        fi
+        if [ -z "$VITE_COUNTER_CONTRACT_ADDRESS" ]; then
+          echo "Error: MIDNIGHT_CONTRACT_ADDRESS secret is not configured."
+          exit 1
+        fi
 
     - name: Setup Node.js v22
       uses: actions/setup-node@v4

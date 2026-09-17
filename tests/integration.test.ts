@@ -12,10 +12,15 @@ import * as zswap from '@midnight-ntwrk/zswap';
 import { CompiledContract } from '@midnight-ntwrk/compact-js';
 import { pipe } from 'effect';
 import path from 'path';
+import { firstValueFrom } from 'rxjs';
 
 test('Integration Test', async () => {
   if (process.env.MIDNIGHT_NETWORK !== 'preprod' || !process.env.MIDNIGHT_WALLET_SEED || !process.env.VITE_COUNTER_CONTRACT_ADDRESS) {
-    console.log("Skipping integration test. Requires MIDNIGHT_NETWORK=preprod, MIDNIGHT_WALLET_SEED, and VITE_COUNTER_CONTRACT_ADDRESS");
+    if (process.env.npm_lifecycle_event === 'test:integration') {
+      console.error("Integration test requires MIDNIGHT_NETWORK=preprod, MIDNIGHT_WALLET_SEED, and VITE_COUNTER_CONTRACT_ADDRESS");
+      process.exit(1);
+    }
+    console.log("Skipping integration test in normal suite. Missing credentials.");
     return;
   }
 
@@ -24,14 +29,14 @@ test('Integration Test', async () => {
   const seed = process.env.MIDNIGHT_WALLET_SEED;
   const contractAddress = process.env.VITE_COUNTER_CONTRACT_ADDRESS;
 
-  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v1/graphql';
-  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v1/graphql';
-  const proverUrl = 'https://prover.preprod.midnight.network/api/v1';
+  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v3/graphql';
+  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v3/graphql';
+  const proverUrl = 'http://127.0.0.1:6300';
   const nodeUrl = 'https://rpc.preprod.midnight.network';
 
   const publicDataProvider = indexerPublicDataProvider(indexerUrl, indexerWsUrl);
   const zkConfigProvider = new NodeZkConfigProvider(path.resolve('./managed/counter'));
-  const proofProvider = httpClientProofProvider(proverUrl);
+  const proofProvider = httpClientProofProvider(proverUrl, zkConfigProvider as any);
 
   const wallet = await WalletBuilder.build(
     indexerUrl,
@@ -44,6 +49,19 @@ test('Integration Test', async () => {
   );
 
   wallet.start();
+  
+  const walletState = await firstValueFrom(wallet.state());
+
+  const patchedWallet = Object.create(wallet);
+  patchedWallet.balanceTx = async (tx: any, _ttl?: Date) => {
+    return await wallet.balanceTransaction(tx, []);
+  };
+  patchedWallet.getCoinPublicKey = () => walletState.coinPublicKey;
+  patchedWallet.getEncryptionPublicKey = () => walletState.encryptionPublicKey;
+  patchedWallet.submitTx = async (tx: any) => {
+    const txHash = await wallet.submitTransaction(tx);
+    return txHash;
+  };
 
   const providers = {
     privateStateProvider: levelPrivateStateProvider({
@@ -54,7 +72,7 @@ test('Integration Test', async () => {
     publicDataProvider,
     zkConfigProvider,
     proofProvider,
-    walletProvider: wallet, 
+    walletProvider: patchedWallet, 
   };
 
   try {
@@ -72,7 +90,6 @@ test('Integration Test', async () => {
     
     assert.ok(result.public.txHash, "Transaction hash must exist");
 
-    // Wait for indexer to catch up
     let stateAfter;
     let attempts = 0;
     while (attempts < 10) {

@@ -10,7 +10,7 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
   const { providers, api } = useMidnight();
   const [publicTotal, setPublicTotal] = useState<string>('Loading...');
   const [amount, setAmount] = useState('');
-  const [step, setStep] = useState<'idle' | 'preparing' | 'proving' | 'approving' | 'submitting' | 'confirmed'>('idle');
+  const [step, setStep] = useState<'idle' | 'preparing' | 'proving' | 'approving' | 'submitting' | 'submitted' | 'waiting for indexer' | 'confirmed'>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const CONTRACT_ADDRESS = import.meta.env.VITE_COUNTER_CONTRACT_ADDRESS;
@@ -52,14 +52,23 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
       setStep('approving');
       const result = await contract.callTx.increment(BigInt(amount));
       
-      setStep('submitting');
+      setStep('submitted');
       setTxHash(result.public.txHash);
-      setStep('confirmed');
       
-      const state = await providers.publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+      setStep('waiting for indexer');
+      let state;
+      for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        state = await providers.publicDataProvider.queryContractState(CONTRACT_ADDRESS);
+        if (state && state.data && state.data.count && state.data.count.toString() !== publicTotal) {
+           break;
+        }
+      }
+      
       if (state && state.data && state.data.count) {
          setPublicTotal(state.data.count.toString());
       }
+      setStep('confirmed');
       
     } catch (e: any) {
       console.error(e);
@@ -109,6 +118,8 @@ export function CircuitCall({ connectedAPI }: { connectedAPI: any }) {
              step === 'proving' ? <><Loader2 className="spinner" /> Generating ZK Proof...</> :
              step === 'approving' ? <><Loader2 className="spinner" /> Awaiting Wallet Signature...</> :
              step === 'submitting' ? <><Loader2 className="spinner" /> Broadcasting to Network...</> :
+             step === 'submitted' ? <><Loader2 className="spinner" /> Transaction Submitted...</> :
+             step === 'waiting for indexer' ? <><Loader2 className="spinner" /> Waiting for Indexer...</> :
              <><CheckCircle2 /> Contribution Confirmed</>}
           </button>
         </form>
