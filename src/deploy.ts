@@ -7,7 +7,7 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { WalletBuilder } from '@midnight-ntwrk/wallet';
 import * as zswap from '@midnight-ntwrk/zswap';
-
+import { firstValueFrom } from 'rxjs';
 import path from 'path';
 
 setNetworkId('preprod');
@@ -16,7 +16,6 @@ async function main() {
   const seed = process.env.SEED;
   if (!seed) throw new Error("SEED environment variable is required to deploy.");
 
-  
   const indexerUrl = 'https://indexer.preprod.midnight.network/api/v1/graphql';
   const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v1/graphql';
   const proverUrl = 'https://prover.preprod.midnight.network/api/v1';
@@ -38,13 +37,18 @@ async function main() {
 
   wallet.start();
 
+  const walletState = await firstValueFrom(wallet.state());
+
   const patchedWallet = Object.create(wallet);
-  // @ts-ignore
-  patchedWallet.balanceTx = async (_tx: any, _ttl?: Date) => {
-    throw new Error("balanceTx not natively supported. Need testnet tokens in wallet SDK v5.");
+  patchedWallet.balanceTx = async (tx: any, _ttl?: Date) => {
+    return await wallet.balanceTransaction(tx, []);
   };
-  patchedWallet.getCoinPublicKey = () => "" as any;
-  patchedWallet.getEncryptionPublicKey = () => "" as any;
+  patchedWallet.getCoinPublicKey = () => walletState.coinPublicKey;
+  patchedWallet.getEncryptionPublicKey = () => walletState.encryptionPublicKey;
+  patchedWallet.submitTx = async (tx: any) => {
+    const txHash = await wallet.submitTransaction(tx);
+    return txHash;
+  };
 
   const providers = {
     privateStateProvider: levelPrivateStateProvider({
