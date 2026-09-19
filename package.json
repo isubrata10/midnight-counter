@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "deploy": "tsx src/deploy.ts",
+    "balance": "tsx src/balance.ts",
     "test": "npx tsx --test tests/counter.test.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
