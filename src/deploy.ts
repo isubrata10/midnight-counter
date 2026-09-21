@@ -54,6 +54,7 @@ async function main() {
     indexerClientConnection: { indexerHttpUrl: indexerUrl, indexerWsUrl: indexerWsUrl },
     nodeClientConnection: { nodeUrl },
     proofServerConnection: { proverUrl },
+    provingServerUrl: new URL(proverUrl),
     txHistoryStorage,
     costParameters: { feeBlocksMargin: 10 },
     networkId,
