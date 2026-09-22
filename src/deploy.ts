@@ -9,12 +9,12 @@ import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import * as ledger from '@midnight-ntwrk/ledger-v8';
 
-import { WalletFacade, WalletEntrySchema } from '@midnight-ntwrk/wallet-sdk-facade';
+import { WalletFacade } from '@midnight-ntwrk/wallet-sdk-facade';
 import { ShieldedWallet } from '@midnight-ntwrk/wallet-sdk-shielded';
 import { UnshieldedWallet, createKeystore, PublicKey } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import { DustWallet } from '@midnight-ntwrk/wallet-sdk-dust-wallet';
 import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
-import { InMemoryTransactionHistoryStorage } from '@midnight-ntwrk/wallet-sdk-abstractions';
+import { NoOpTransactionHistoryStorage } from '@midnight-ntwrk/wallet-sdk-abstractions';
 import path from 'path';
 
 setNetworkId('preprod');
@@ -42,13 +42,13 @@ async function main() {
   const unshieldedKeystore = createKeystore(keysResult.keys[Roles.NightExternal], networkId);
   const unshieldedPublicKey = PublicKey.fromKeyStore(unshieldedKeystore);
   
-  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v3/graphql';
-  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws';
+  const indexerUrl = 'https://indexer.preprod.midnight.network/api/v4/graphql';
+  const indexerWsUrl = 'wss://indexer.preprod.midnight.network/api/v4/graphql/ws';
   const proverUrl = 'http://127.0.0.1:6300';
   const nodeUrl = 'https://rpc.preprod.midnight.network';
 
   console.log("Initializing Midnight Preprod wallet (Facade API)...");
-  const txHistoryStorage = new InMemoryTransactionHistoryStorage(WalletEntrySchema);
+  const txHistoryStorage = new NoOpTransactionHistoryStorage();
 
   const configuration = {
     indexerClientConnection: { indexerHttpUrl: indexerUrl, indexerWsUrl: indexerWsUrl },
@@ -58,7 +58,11 @@ async function main() {
     txHistoryStorage,
     costParameters: { feeBlocksMargin: 10 },
     networkId,
-    relayURL: nodeUrl as any
+    relayURL: nodeUrl as any,
+    batchUpdates: {
+      size: 5000,
+      spacing: 0
+    }
   };
 
   const wallet = await WalletFacade.init({
